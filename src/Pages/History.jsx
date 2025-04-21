@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import { Container, Card, CardContent, Typography, TextField, MenuItem } from "@mui/material";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
-const HISTORICAL_API = "https://api.exchangerate.host/timeseries";
-const NEWS_API = "https://api.currentsapi.services/v1/latest-news?category=business&language=en&apiKey=${i2NK1_ZBctPSWELV_uHYLcJEKf5eI1adlhp8CqhZoyhJQgaF}";
-const currencies = ["USD", "EUR", "GBP", "NGN", "JPY"];
+const HISTORICAL_API = "https://api.exchangeratesapi.io/v1/2018-12-22?access_key=ed3cc473152d544b17e318dc14e4fee0";
 
+const NEWS_API = "https://api.currentsapi.services/v1/latest-news?category=business&language=en&apiKey=i2NK1_ZBctPSWELV_uHYLcJEKf5eI1adlhp8CqhZoyhJQgaF";
+
+const currencies = ["USD", "EUR", "GBP", "NGN", "JPY", "AUD", "CAD", "INR", "CNY", "CHF"];
+// const API_KEY = "ed3cc473152d544b17e318dc14e4fee0";
 
 function History () {
   const [baseCurrency, setBaseCurrency] = useState("USD");
@@ -20,12 +22,16 @@ function History () {
     fetch(`${HISTORICAL_API}?start_date=${startDate}&end_date=${endDate}&base=${baseCurrency}&symbols=${targetCurrency}`)
       .then(res => res.json())
       .then(data => {
-        const formatted = Object.entries(data.rates).map(([date, rate]) => ({
-          date,
-          rate: rate[targetCurrency]
-        }));
-        setChartData(formatted);
-      });
+        console.log("Rates data:", data);
+        if (data.success && data.rates) {
+          const formatted = Object.entries(data.rates).map(([date, rate]) => ({
+            date,
+            rate: rate[targetCurrency]
+          }));
+          setChartData(formatted);
+        }
+      })
+      .catch(err => console.error("Chart API Error:", err));
   }, [baseCurrency, targetCurrency]);
 
   useEffect(() => {
@@ -60,15 +66,19 @@ function History () {
             {currencies.map(cur => <MenuItem key={cur} value={cur}>{cur}</MenuItem>)}
           </TextField>
 
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis domain={['auto', 'auto']} />
-              <Tooltip />
-              <Line type="monotone" dataKey="rate" stroke="#3b82f6" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
+          {chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis domain={['auto', 'auto']} />
+                <Tooltip />
+                <Line type="monotone" dataKey="rate" stroke="#3b82f6" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <Typography>Loading chart data...</Typography>
+          )}
         </CardContent>
       </Card>
 
@@ -76,7 +86,9 @@ function History () {
       {news.map((article, idx) => (
         <Card key={idx} className="mb-4">
           <CardContent>
-            <Typography variant="h6">{article.title}</Typography>
+            <Link href={article.url} target="_blank" rel="noopener noreferrer" underline="none">
+              <Typography variant="h6" color="primary">{article.title}</Typography>
+            </Link>
             <Typography variant="body2">{article.description}</Typography>
             <Typography variant="caption">Source: {article.author || article.source}</Typography>
           </CardContent>
