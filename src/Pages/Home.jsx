@@ -47,7 +47,7 @@ function Home() {
           Convert currencies in real time, view exchange rates, and check historical trends.
         </p>
         <div className="flex justify-center space-x-4">
-          <Link to="/history">
+          <Link to="">
             <Button variant="contained" color="primary">Get Started</Button>
           </Link>
           <Link to="/exchange">
