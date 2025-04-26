@@ -1,15 +1,14 @@
-import { useState, useEffect } from "react";
-import { Container, Card, CardContent, Typography, TextField, MenuItem } from "@mui/material";
+/* eslint-disable no-unused-vars */
+import React, { useState, useEffect } from "react";
+import { Container, Card, CardContent, Typography, TextField, MenuItem, Link, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
-const HISTORICAL_API = "https://api.exchangeratesapi.io/v1/2018-12-22?access_key=ed3cc473152d544b17e318dc14e4fee0";
-
-const NEWS_API = "https://api.currentsapi.services/v1/latest-news?category=business&language=en&apiKey=i2NK1_ZBctPSWELV_uHYLcJEKf5eI1adlhp8CqhZoyhJQgaF";
+const HISTORICAL_API = "http://data.fixer.io/api/timeseries?access_key={41afc54c6713b161423f2204cf230b5c}&symbols=USD,EUR&start_date=2012-05-01&end_date=2012-05-25'";
+const NEWS_API = "https://gnews.io/api/v4/top-headlines?topic=business&lang=en&token=ee3b519682f0f397245b380660ab98ab";
 
 const currencies = ["USD", "EUR", "GBP", "NGN", "JPY", "AUD", "CAD", "INR", "CNY", "CHF"];
-// const API_KEY = "ed3cc473152d544b17e318dc14e4fee0";
 
-function History () {
+function History() {
   const [baseCurrency, setBaseCurrency] = useState("USD");
   const [targetCurrency, setTargetCurrency] = useState("EUR");
   const [chartData, setChartData] = useState([]);
@@ -19,25 +18,50 @@ function History () {
     const endDate = new Date().toISOString().split("T")[0];
     const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
-    fetch(`${HISTORICAL_API}?start_date=${startDate}&end_date=${endDate}&base=${baseCurrency}&symbols=${targetCurrency}`)
-      .then(res => res.json())
-      .then(data => {
-        console.log("Rates data:", data);
-        if (data.success && data.rates) {
-          const formatted = Object.entries(data.rates).map(([date, rate]) => ({
-            date,
-            rate: rate[targetCurrency]
-          }));
+    const options = {
+      method: 'GET'
+    };
+    const fetchRates = async () => {
+      try {
+       const res = await fetch(`${HISTORICAL_API}?start_date=${startDate}&end_date=${endDate}&base=${baseCurrency}&symbols=${targetCurrency}`);
+        const data = await res.json();
+
+        console.log("Full API Response:", data);
+
+        if (data?.rates) {
+          const formatted = Object.entries(data.rates)
+            .filter(([_, rateObj]) => rateObj[targetCurrency] !== undefined)
+            .map(([date, rateObj]) => ({
+              date,
+              rate: rateObj[targetCurrency],
+            }));
+
           setChartData(formatted);
+        } else {
+          console.log("No valid rates object found in response");
+          setChartData([]);
         }
-      })
-      .catch(err => console.error("Chart API Error:", err));
+      } catch (error) {
+        console.error("Chart API Error:", error);
+        setChartData([]);
+      }
+}
+     if (baseCurrency && targetCurrency) {
+      fetchRates;
+    }
   }, [baseCurrency, targetCurrency]);
 
   useEffect(() => {
     fetch(NEWS_API)
       .then(res => res.json())
-      .then(data => setNews(data.news || []))
+      .then(data => {
+        if (data.articles) {
+          setNews(data.articles);
+        } else {
+          console.warn("No news articles found.");
+          setNews([]);
+        }
+      })
       .catch(err => console.error("News API Error:", err));
   }, []);
 
@@ -67,17 +91,24 @@ function History () {
           </TextField>
 
           {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis domain={['auto', 'auto']} />
-                <Tooltip />
-                <Line type="monotone" dataKey="rate" stroke="#3b82f6" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Date</TableCell>
+                  <TableCell>Exchange Rate ({baseCurrency} to {targetCurrency})</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {chartData.map((item, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{item.date}</TableCell>
+                    <TableCell>{item.rate}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           ) : (
-            <Typography>Loading chart data...</Typography>
+            <Typography>No historical data available for selected currencies.</Typography>
           )}
         </CardContent>
       </Card>
@@ -90,12 +121,12 @@ function History () {
               <Typography variant="h6" color="primary">{article.title}</Typography>
             </Link>
             <Typography variant="body2">{article.description}</Typography>
-            <Typography variant="caption">Source: {article.author || article.source}</Typography>
+            <Typography variant="caption">Source: {article.source.name}</Typography>
           </CardContent>
         </Card>
       ))}
     </Container>
   );
-};
+    };
 
 export default History;
