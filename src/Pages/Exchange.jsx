@@ -84,7 +84,7 @@ function Exchange() {
 
           {convertedAmount && (
             <Typography variant="h6" className='flex'>
-              <div className="font-bold uppercase">Converted Amt:</div> &nbsp; {formatNumber(amount)} {baseCurrency} = {formatNumber(convertedAmount.toFixed(2))} {targetCurrency}
+              <div className="font-bold uppercase">Conv. Amt:</div> &nbsp; {formatNumber(amount)} {baseCurrency} = {formatNumber(convertedAmount.toFixed(2))} {targetCurrency}
             </Typography>
           )}
         </CardContent>
